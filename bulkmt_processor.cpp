@@ -10,10 +10,10 @@ bulk::bulk(std::size_t _bulk_size,std::size_t _file_workers_count):
             metrics{0,0,0}
 {
         std::size_t i = 0;
-        _hndl.emplace_back(&bulk::terminal_worker ,this, "log");//, std::ref(q));
+        _hndl.emplace_back(&bulk::terminal_worker ,this, "log");
         while (i != _file_workers_count )
         {
-            _hndl.emplace_back(&bulk::file_worker    ,this,"file"+std::to_string(i+1));//,std::ref(q),std::ref(time));
+            _hndl.emplace_back(&bulk::file_worker    ,this,"file"+std::to_string(i+1));
             i++;
         }
 };
