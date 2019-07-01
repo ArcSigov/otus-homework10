@@ -7,13 +7,13 @@ bulk::bulk(std::size_t _bulk_size,std::size_t _file_workers_count):
             time(0),
             is_quit(false),
             data_is_logged(false),
-            metrics{0,0,0,0}
+            metrics{0,0,0}
 {
         std::size_t i = 0;
-        _hndl.emplace_back(&bulk::terminal_worker ,this, "log", std::ref(q));
+        _hndl.emplace_back(&bulk::terminal_worker ,this, "log");//, std::ref(q));
         while (i != _file_workers_count )
         {
-            _hndl.emplace_back(&bulk::file_worker    ,this,"file"+std::to_string(i+1),std::ref(q),std::ref(time));
+            _hndl.emplace_back(&bulk::file_worker    ,this,"file"+std::to_string(i+1));//,std::ref(q),std::ref(time));
             i++;
         }
 };
@@ -151,21 +151,21 @@ void bulk::start()
     
 }
 
-void bulk::file_worker(std::string name, bulk_queue& vstr,const std::size_t &time)
+void bulk::file_worker(std::string name)
 {
     int i = 0;
-    metrics_t current{0,0,0,0};
+    metrics_t current{0,0,0};
     while (!is_quit)
     {
         std::unique_lock<std::mutex> lk(mute);
         cv.wait(lk,[&]()
         {
-            return (!vstr.empty() || is_quit);
+            return (!q.empty() || is_quit);
         });
         if (data_is_logged)
         {
             current.blocks_count++;
-            auto a = vstr.front();    
+            auto a = q.front();    
             std::stringstream ss;
             ss <<  "bulk" << std::to_string(time)  << "_" << name << "_" << "task_" << i << ".log";
             ++i;
@@ -182,28 +182,28 @@ void bulk::file_worker(std::string name, bulk_queue& vstr,const std::size_t &tim
             output<< std::endl;
             output.close();
             data_is_logged = false;
-            vstr.pop();
+            q.pop();
             lk.unlock();
         }
     }
     print_metrics(name,current,false);
 }
 
-void bulk::terminal_worker(std::string name, bulk_queue& vstr)
+void bulk::terminal_worker(std::string name)
 {
-    metrics_t current{0,0,0,0};
+    metrics_t current{0,0,0};
     while(!is_quit)
     {
         std::unique_lock<std::mutex> lk(mute);
         cv.wait(lk,[&]()
         {
-            return (!vstr.empty() || is_quit) && !data_is_logged;
+            return (!q.empty() || is_quit) && !data_is_logged;
         });
         
-        if (!vstr.empty())
+        if (!q.empty())
         {
             current.blocks_count++;
-            auto a = vstr.front();
+            auto a = q.front();
             std::cout << "bulk: ";
             for (auto it = a.cbegin() ; it !=a.cend();it++)
             {

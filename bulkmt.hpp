@@ -35,8 +35,8 @@ private:
     void notify();
     auto run_bulk();
     auto get_dynamic_block();
-    void file_worker    ( std::string name, bulk_queue& vstr, const std::size_t &time);
-    void terminal_worker( std::string name, bulk_queue& vstr);
+    void file_worker    ( std::string name);
+    void terminal_worker( std::string name);
     void print_metrics  (const std::string& thread_name,const metrics_t& metrics,const bool& lines);
     std::size_t bulk_size;
     std::size_t time;
