@@ -13,7 +13,6 @@
    
 struct metrics_t
 {
-    std::size_t bulk_size;
     std::size_t blocks_count;
     std::size_t commands_count;
     std::size_t lines_count;
