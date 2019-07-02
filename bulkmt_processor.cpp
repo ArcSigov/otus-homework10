@@ -151,7 +151,7 @@ void bulk::start()
     
 }
 
-void bulk::file_worker(std::string name)
+void bulk::file_worker(const std::string& name)
 {
     int i = 0;
     metrics_t current{0,0,0};
@@ -189,7 +189,7 @@ void bulk::file_worker(std::string name)
     print_metrics(name,current,false);
 }
 
-void bulk::terminal_worker(std::string name)
+void bulk::terminal_worker(const std::string& name)
 {
     metrics_t current{0,0,0};
     while(!is_quit)
