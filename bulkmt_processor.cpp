@@ -182,9 +182,9 @@ void bulk::file_worker(const std::string& name)
             output<< std::endl;
             output.close();
             data_is_logged = false;
-            q.pop();
-            lk.unlock();
+            q.pop();   
         }
+        lk.unlock();
     }
     print_metrics(name,current,false);
 }
