@@ -26,8 +26,8 @@ class bulk
     using bulk_queue  = std::queue<std::shared_ptr<block>>;
     std::vector<std::thread> _hndl;
     block  subs;
-    bulk_queue  q1;
-    bulk_queue  q2;
+    bulk_queue  log_queue;
+    bulk_queue  file_queue;
     system_time sys_time;
     metrics_t   metrics;
 public:

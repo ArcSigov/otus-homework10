@@ -140,8 +140,8 @@ void bulk::start()
             if (subs.size())
             {
                 metrics.blocks_count++;
-                q1.push(std::make_shared<block>(subs));
-                q2.push(std::make_shared<block>(subs));
+                log_queue.push(std::make_shared<block>(subs));
+                file_queue.push(std::make_shared<block>(subs));
             }            
         }
         cv.notify_all();
@@ -152,7 +152,7 @@ void bulk::start()
     {
         {
             std::lock_guard<std::mutex> lk(mute);
-            if (q1.empty() && q2.empty())
+            if (file_queue.empty() && log_queue.empty())
             {
                 is_quit = true;
                 completed = true;
@@ -173,13 +173,13 @@ void bulk::file_worker(const std::string& name)
         std::unique_lock<std::mutex> lk(mute);
         cv.wait(lk,[&]()
         {
-            return (!q2.empty() || is_quit);
+            return (!file_queue.empty() || is_quit);
         });
 
-        if (!q2.empty())
+        if (!file_queue.empty())
         {
             current.blocks_count++;
-            auto a = q2.front();    
+            auto a = file_queue.front();    
             std::stringstream ss;
             ss <<  "bulk" << std::to_string(time)  << "_" << name << "_" << "task_" << i << ".log";
             ++i;
@@ -194,7 +194,7 @@ void bulk::file_worker(const std::string& name)
             }
             output<< std::endl;
             output.close();
-            q2.pop();   
+            file_queue.pop();   
         }
         lk.unlock();
     }
@@ -209,13 +209,13 @@ void bulk::terminal_worker(const std::string& name)
         std::unique_lock<std::mutex> lk(mute);
         cv.wait(lk,[&]()
         {
-            return (!q1.empty() || is_quit);
+            return (!log_queue.empty() || is_quit);
         });
         
-        if (!q1.empty())
+        if (!log_queue.empty())
         {
             current.blocks_count++;
-            auto a = q1.front();
+            auto a = log_queue.front();
             std::cout << "bulk: ";
             for (auto it = a->cbegin() ; it !=a->cend();it++)
             {
@@ -225,7 +225,7 @@ void bulk::terminal_worker(const std::string& name)
                 current.commands_count++;
             }
             std::cout << std::endl;
-            q1.pop();
+            log_queue.pop();
         }
         lk.unlock();
     }
