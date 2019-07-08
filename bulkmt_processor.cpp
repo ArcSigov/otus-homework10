@@ -140,8 +140,8 @@ void bulk::start()
             if (subs.size())
             {
                 metrics.blocks_count++;
-                q1.push(subs);
-                q2.push(subs);
+                q1.push(std::make_shared<block>(subs));
+                q2.push(std::make_shared<block>(subs));
             }            
         }
         cv.notify_all();
@@ -185,9 +185,9 @@ void bulk::file_worker(const std::string& name)
             ++i;
             std::ofstream output(ss.str());
 
-            for (auto it = a.cbegin() ; it !=a.cend();it++)
+            for (auto it = a->cbegin() ; it !=a->cend();it++)
             {
-                if (it != a.cbegin())
+                if (it != a->cbegin())
                     output << ", ";
                 output << *it;
                 current.commands_count++;
@@ -217,9 +217,9 @@ void bulk::terminal_worker(const std::string& name)
             current.blocks_count++;
             auto a = q1.front();
             std::cout << "bulk: ";
-            for (auto it = a.cbegin() ; it !=a.cend();it++)
+            for (auto it = a->cbegin() ; it !=a->cend();it++)
             {
-                if (it != a.cbegin())
+                if (it != a->cbegin())
                     std::cout << ", ";
                 std::cout << *it;
                 current.commands_count++;

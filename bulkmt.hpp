@@ -22,9 +22,10 @@ struct metrics_t
 class bulk
 {
     using system_time = std::chrono::time_point<std::chrono::system_clock>;
-    using bulk_queue  = std::queue<std::vector<std::string>>;
+    using block       = std::vector<std::string>;
+    using bulk_queue  = std::queue<std::shared_ptr<block>>;
     std::vector<std::thread> _hndl;
-    std::vector<std::string>  subs;
+    block  subs;
     bulk_queue  q1;
     bulk_queue  q2;
     system_time sys_time;
