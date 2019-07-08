@@ -3,11 +3,7 @@ language: cpp
 compiler: clang
 sudo: true
 before_script:
-- sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-- sudo apt-get update -q
-- sudo apt-get install gcc-7 -y
-- sudo apt-get install g++-7 -y
-- sudo apt install libboost-test-dev -y
+- sudo apt update
 script:
 - cmake .
 - cmake --build .
