@@ -10,6 +10,7 @@
 #include <queue>
 #include <sstream>
 #include <fstream>
+#include <memory>
    
 struct metrics_t
 {
@@ -24,7 +25,8 @@ class bulk
     using bulk_queue  = std::queue<std::vector<std::string>>;
     std::vector<std::thread> _hndl;
     std::vector<std::string>  subs;
-    bulk_queue  q;
+    bulk_queue  q1;
+    bulk_queue  q2;
     system_time sys_time;
     metrics_t   metrics;
 public:
@@ -41,7 +43,6 @@ private:
     std::size_t bulk_size;
     std::size_t time;
     std::atomic<bool> is_quit;
-    std::atomic<bool> data_is_logged;
     std::condition_variable cv;
     std::mutex mute;
 };

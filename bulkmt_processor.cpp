@@ -3,11 +3,10 @@
 
 
 bulk::bulk(std::size_t _bulk_size,std::size_t _file_workers_count):
+            metrics{0,0,0},
             bulk_size(_bulk_size), 
             time(0),
-            is_quit(false),
-            data_is_logged(false),
-            metrics{0,0,0}
+            is_quit(false)
 {
         std::size_t i = 0;
         _hndl.emplace_back(&bulk::terminal_worker ,this, "log");
@@ -104,6 +103,10 @@ auto bulk::get_dynamic_block()
             break;
         }
     }
+    if (line_protector)
+    {
+        subs.clear();
+    }
     return std::make_tuple(dynamic,protector);
 }
 
@@ -120,35 +123,45 @@ void bulk::start()
 {
     auto protector = 0;
     auto dynamic = 0;
-    while (!protector || !q.empty())
+    while (!protector)
     {
         {
             std::lock_guard<std::mutex> lk(mute);
             sys_time = std::chrono::system_clock::now();
-            if (q.empty())
+            subs.clear();
+            if (dynamic)
             {
-                subs.clear();
-                if (dynamic)
-                {
-                    std::tie(dynamic,protector) = get_dynamic_block();
-                }
-                else
-                {
-                    std::tie(dynamic,protector)  = run_bulk();
-                }
-                if (subs.size())
-                {
-                    metrics.blocks_count++;
-                    q.push(subs);
-                }
+                std::tie(dynamic,protector) = get_dynamic_block();
             }
+            else
+            {
+                std::tie(dynamic,protector)  = run_bulk();
+            }
+            if (subs.size())
+            {
+                metrics.blocks_count++;
+                q1.push(subs);
+                q2.push(subs);
+            }            
         }
         cv.notify_all();
     }
-    is_quit = true;
-    print_metrics("main",metrics,true);
-    cv.notify_all();
+
+    auto completed = false;
+    while (!completed)
+    {
+        {
+            std::lock_guard<std::mutex> lk(mute);
+            if (q1.empty() && q2.empty())
+            {
+                is_quit = true;
+                completed = true;
+            }
+        }
+    }
     
+    cv.notify_all();
+    print_metrics("main",metrics,true);
 }
 
 void bulk::file_worker(const std::string& name)
@@ -160,17 +173,17 @@ void bulk::file_worker(const std::string& name)
         std::unique_lock<std::mutex> lk(mute);
         cv.wait(lk,[&]()
         {
-            return (!q.empty() || is_quit);
+            return (!q2.empty() || is_quit);
         });
-        if (data_is_logged)
+
+        if (!q2.empty())
         {
             current.blocks_count++;
-            auto a = q.front();    
+            auto a = q2.front();    
             std::stringstream ss;
             ss <<  "bulk" << std::to_string(time)  << "_" << name << "_" << "task_" << i << ".log";
             ++i;
             std::ofstream output(ss.str());
-            output << "bulk: ";
 
             for (auto it = a.cbegin() ; it !=a.cend();it++)
             {
@@ -181,8 +194,7 @@ void bulk::file_worker(const std::string& name)
             }
             output<< std::endl;
             output.close();
-            data_is_logged = false;
-            q.pop();   
+            q2.pop();   
         }
         lk.unlock();
     }
@@ -197,13 +209,13 @@ void bulk::terminal_worker(const std::string& name)
         std::unique_lock<std::mutex> lk(mute);
         cv.wait(lk,[&]()
         {
-            return (!q.empty() || is_quit) && !data_is_logged;
+            return (!q1.empty() || is_quit);
         });
         
-        if (!q.empty())
+        if (!q1.empty())
         {
             current.blocks_count++;
-            auto a = q.front();
+            auto a = q1.front();
             std::cout << "bulk: ";
             for (auto it = a.cbegin() ; it !=a.cend();it++)
             {
@@ -213,7 +225,7 @@ void bulk::terminal_worker(const std::string& name)
                 current.commands_count++;
             }
             std::cout << std::endl;
-            data_is_logged = true;
+            q1.pop();
         }
         lk.unlock();
     }

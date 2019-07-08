@@ -20,6 +20,12 @@ set_target_properties(${PROJECT_NAME}  PROPERTIES
     COMPILE_OPTIONS "-Wpedantic;-Wall;-Wextra"
     
 )
+set_target_properties(definitions  PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+    COMPILE_OPTIONS "-Wpedantic;-Wall;-Wextra"
+    
+)
 
 target_link_libraries(${PROJECT_NAME}
                       ${CMAKE_THREAD_LIBS_INIT}
